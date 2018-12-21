@@ -1,0 +1,4 @@
+.vagrant
+cache.sh
+*.log
+*.gz
