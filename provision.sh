@@ -15,6 +15,17 @@ prepare_cache() {
 	done
 }
 
+## prepare ssh identification
+prepare_ssh_id() {
+	if [ -f ~/.ssh/id_rsa ]; then
+	       ssh-keygen -t rsa -f ~/.ssh/id_rsa -N ""
+		eval $(ssh-agent)
+		ssh-add ~/.ssh/id_rsa
+		[ "$DRY_RUN" -eq 0 ] && ssh-copy-id "$login_at_host"
+	fi
+}
+
+
 #### MAIN CODE ####
 
 ## prepare shell variables from cache or request them interactively
@@ -22,17 +33,10 @@ prepare_cache() {
 [ -f "$CACHE_FILE_NAME" ] && . "$CACHE_FILE_NAME" || prepare_cache
 
 
-## prepare ssh identification
-
-[ -f ~/.ssh/id_rsa ] || ssh-keygen -t rsa -f ~/.ssh/id_rsa -N ""
-eval `ssh-agent`
-ssh-add ~/.ssh/id_rsa
-[ "$DRY_RUN" -eq 0 ] && ssh-copy-id "$login_at_host"
-
-
 ## copy and fix www files
 
-if [ "$DRY_RUN" -eq 0 ]; then
+if [ "$DRY_RUN" -eq 0 -a ! -f /vagrant/www.tar.gz ]; then
+	prepare_ssh_id
 	rsync -azv "$login_at_host":"$path_to_public_html"/ /var/www/html/ && tar -C /var/www/html -czf /vagrant/www.tar.gz .
 else
 	echo "Unpacking www.tar.gz"
@@ -48,7 +52,8 @@ db_name=$(php -r 'include "/var/www/html/inc/config.php"; echo $config["database
 db_login=$(php -r 'include "/var/www/html/inc/config.php"; echo $config["database"]["username"];')
 db_password=$(php -r 'include "/var/www/html/inc/config.php"; echo $config["database"]["password"];')
 
-if [ "$DRY_RUN" -eq 0 ]; then
+if [ "$DRY_RUN" -eq 0 -a ! -f /vagrant/sql.gz ]; then
+	prepare_ssh_id
 	ssh -C "$login_at_host" mysqldump --databases "$db_name" -u "$db_login" "-p$db_password" | gzip > /vagrant/sql.gz
 fi
 zcat /vagrant/sql.gz | mysql -u root -proot

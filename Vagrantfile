@@ -5,12 +5,15 @@ Vagrant.configure("2") do |config|
     vb.memory = "512"
   end
 
+  config.vm.synced_folder ".", "/vagrant"
+
   config.vm.provision "shell", inline: <<-SHELL
+    sudo add-apt-repository -y ppa:ondrej/php
     sudo apt-get update
 
     debconf-set-selections <<< 'mysql-server mysql-server/root_password password root'
     debconf-set-selections <<< 'mysql-server mysql-server/root_password_again password root'
-    PKGS="apache2 libapache2-mod-php mysql-client mysql-server php-mbstring php-xml php-mysql"
+    PKGS="apache2 libapache2-mod-php5.6 mysql-client mysql-server php5.6-mbstring php5.6-xml php5.6-mysql"
     apt-get -y --no-install-recommends install $PKGS
 
     a2enmod rewrite
