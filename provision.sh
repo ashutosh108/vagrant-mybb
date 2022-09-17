@@ -17,8 +17,8 @@ prepare_cache() {
 
 ## prepare ssh identification
 prepare_ssh_id() {
-	if [ -f ~/.ssh/id_rsa ]; then
-	       ssh-keygen -t rsa -f ~/.ssh/id_rsa -N ""
+	if [ ! -f ~/.ssh/id_rsa ]; then
+		ssh-keygen -t rsa -f ~/.ssh/id_rsa -N ""
 		eval $(ssh-agent)
 		ssh-add ~/.ssh/id_rsa
 		[ "$DRY_RUN" -eq 0 ] && ssh-copy-id "$login_at_host"
